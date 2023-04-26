@@ -1,0 +1,36 @@
+node_modules
+*.db
+.well-known
+*db-journal
+nohup.out
+key.txt
+*.pdf
+[0-9]*.html
+.vscode
+*.count[0-9]*
+.idea
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+*/build/
+*/target/
+*/dist/
+
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

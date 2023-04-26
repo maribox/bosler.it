@@ -1,0 +1,29 @@
+[tasks.build]
+command = "wsl"
+args = ["-d", "Ubuntu", "-u", "marunix", "cargo", "build", "--release", "--target=aarch64-unknown-linux-gnu"]
+
+[tasks.stop-server]
+command = "ssh"
+args = ["marius@pi.local", "/home/marius/server/run_files/stop-server.sh"]
+
+[tasks.start-server]
+command = "ssh"
+args = ["marius@pi.local", "/home/marius/server/run_files/start-server.sh"]
+
+[tasks.copyToServer]
+command = "scp"
+args = ["-r", "./target/aarch64-unknown-linux-gnu/release/backend", "marius@pi.local:~/server/bosler.it/backend/"]
+dependencies = ["stop-server"]
+
+[tasks.changePermission]
+command = "ssh"
+args = ["marius@pi.local", "chmod +x -R ~/server/bosler.it/backend"]
+
+[tasks.buildcopy]
+dependencies = ["build", "copyToServer", "changePermission"]
+
+[tasks.buildrun]
+command = "ssh"
+# build and execute the built file on the server
+args = ["marius@pi.local", '"/home/marius/server/run_files/start-server.sh"']
+dependencies = ["build", "copyToServer", "changePermission"]

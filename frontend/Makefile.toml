@@ -1,0 +1,21 @@
+[tasks.stop-server]
+command = "ssh"
+args = ["marius@pi.local", "/home/marius/server/run_files/stop-server.sh"]
+
+[tasks.start-server]
+command = "ssh"
+args = ["marius@pi.local", "/home/marius/server/run_files/start-server.sh"]
+
+[tasks.copyToServer]
+command = "scp"
+args = ["-r", "./dist", "marius@pi.local:~/server/bosler.it/frontend/dist"]
+dependencies = ["stop-server"]
+
+[tasks.buildcopy]
+dependencies = ["build", "copyToServer"]
+
+[tasks.copyrun]
+command = "ssh"
+# build and execute the built file on the server
+args = ["marius@pi.local", '"/home/marius/server/run_files/start-server.sh"']
+dependencies = ["copyToServer"]
