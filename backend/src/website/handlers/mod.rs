@@ -1,13 +1,10 @@
-use std::ffi::OsStr;
-use std::fs;
 use std::path::PathBuf;
-use actix_web::{get, HttpResponse, HttpServer, Responder, Result, web};
-use chrono::{DateTime, Utc};
-use crate::website::{AppState, data_repository};
+use actix_web::{get, HttpResponse, Result, web};
+use crate::website::{data_repository};
 
-use serde::{Deserialize, Serialize};
 use serde_json::to_string;
-use crate::types::{FileInfoRec, Visibility};
+use crate::ServerState;
+use crate::types::{FileInfoRec};
 
 #[get("/files/data/{file_path:.*}")]
 pub async fn get_file_data(path: web::Path<String>) -> Result<String> {
@@ -16,7 +13,7 @@ pub async fn get_file_data(path: web::Path<String>) -> Result<String> {
 }
 
 #[get("/files/data")]
-pub async fn get_all_file_data(data: web::Data<AppState>) -> Result<HttpResponse> {
+pub async fn get_all_file_data(data: web::Data<ServerState>) -> Result<HttpResponse> {
     let users_path = PathBuf::from(&data.users_path).join("files");
 
     let files: Vec<FileInfoRec>  = data_repository::read_dir_recursive(users_path, String::from(""))?;

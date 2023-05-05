@@ -1,5 +1,3 @@
-use mongodb::{bson, bson::doc, Client};
-use mongodb::error::Result;
 use std::path::PathBuf;
 use std::fs;
 use std::ffi::OsStr;

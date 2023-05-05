@@ -4,11 +4,15 @@ args = ["-d", "Ubuntu", "-u", "marunix", "cargo", "build", "--release", "--targe
 
 [tasks.stop-server]
 command = "ssh"
-args = ["marius@pi.local", "/home/marius/server/run_files/stop-server.sh"]
+args = ["-t", "marius@pi.local", "sudo", "systemctl", "stop", "bosler.it-server"]
 
 [tasks.start-server]
 command = "ssh"
-args = ["marius@pi.local", "/home/marius/server/run_files/start-server.sh"]
+args = ["-t", "marius@pi.local", "sudo", "systemctl", "start", "bosler.it-server"]
+
+[tasks.restart-server]
+command = "ssh"
+args = ["-t", "marius@pi.local", "sudo", "systemctl", "restart", "bosler.it-server"]
 
 [tasks.copyToServer]
 command = "scp"
@@ -23,7 +27,6 @@ args = ["marius@pi.local", "chmod +x -R ~/server/bosler.it/backend"]
 dependencies = ["build", "copyToServer", "changePermission"]
 
 [tasks.buildrun]
-command = "ssh"
-# build and execute the built file on the server
-args = ["marius@pi.local", '"/home/marius/server/run_files/start-server.sh"']
-dependencies = ["build", "copyToServer", "changePermission"]
+command = "echo"
+args = ["executed buildrun..."]
+dependencies = ["build", "copyToServer", "changePermission", "start-server"]

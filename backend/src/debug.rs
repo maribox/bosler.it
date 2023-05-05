@@ -1,18 +1,29 @@
 use futures::TryStreamExt;
-use mongodb::{bson, Client};
+use mongodb::{Client, options::ClientOptions};
 use crate::types::FileInfoRec;
 
 mod types;
 
-async fn fetch_file_info_recs() -> Result<Vec<FileInfoRec>> {
-    let client = Client::with_uri_str("mongodb://localhost:27017").await?;
-    let database = client.database("Website");
-    let collection = database.collection::<FileInfoRec>("Userfiles");
+async fn fetch_file_info_recs() -> Result<Vec<FileInfoRec>, mongodb::error::Error> {
+    let mut client_options = ClientOptions::parse("mongodb://localhost:27017").await?;
+    client_options.app_name = Some("My App".to_string());
+    let client = Client::with_options(client_options)?;
+    for db_name in client.list_database_names(None, None).await? {
+        println!("{}", db_name);
+    }
+    let db = client.database("Website");
+    for collection_name in db.list_collection_names(None).await? {
+        println!("{}", collection_name);
+    }
+    let collection = db.collection::<FileInfoRec>("Userfiles");
 
-    let cursor = collection.find(None, None).await?;
-    let file_info_records= cursor.try_collect().await;
+    let mut cursor = collection.find(None, None).await?;
+    while let Some(file) = cursor.try_next().await? {
+        println!("title: {}", file.file_name);
+    }
 
-    file_info_records
+
+    Ok(cursor.try_collect().await?)
 }
 
 #[tokio::main]

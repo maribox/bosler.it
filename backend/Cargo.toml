@@ -2,10 +2,10 @@
 name = "backend"
 version = "0.1.0"
 edition = "2021"
-default-run = "main"
+default-run = "backend"
 
 [[bin]]
-name = "main"
+name = "backend"
 path = "src/main.rs"
 
 [[bin]]
