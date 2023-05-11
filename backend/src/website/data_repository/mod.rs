@@ -1,6 +1,11 @@
 use std::path::PathBuf;
 use std::fs;
 use std::ffi::OsStr;
+use chrono::Utc;
+use futures::StreamExt;
+use mongodb::bson::{Bson, doc, Document, to_bson};
+use mongodb::{Client, Collection, Database};
+use mongodb::options::ClientOptions;
 use crate::types::{FileInfoRec, Visibility};
 
 
@@ -40,4 +45,67 @@ pub fn read_dir_recursive(user_path: PathBuf, relative_path: String) -> actix_we
         files_recursive.push(file_info);
     }
     Ok(files_recursive)
+}
+
+
+pub async fn init_db(users_path: PathBuf) -> Result<Database, mongodb::error::Error> {
+    let mut client_options = ClientOptions::parse("mongodb://localhost:27017").await?;
+    client_options.app_name = Some("bosler.it".to_string());
+    let client = Client::with_options(client_options)?;
+    for db_name in client.list_database_names(None, None).await? {
+        println!("{}", db_name);
+    }
+    let database = client.database("Website");
+    let userfiles = database.collection::<Document>("Userfiles");
+    match find_top_level_folder(&userfiles).await {
+        Ok(Some(_)) => {
+            println!("Top level folder already exists");
+        }
+        Ok(None) => {
+            println!("Top level folder does not exist, creating...");
+            create_top_level_folder(&userfiles, users_path).await?;
+        }
+        _ => {}
+    }
+
+
+    let mut cursor = userfiles.find(None, None).await?;
+    while let Some(result) = cursor.next().await {
+        match result {
+            Ok(document) => {
+                println!("{:?}", document);
+            }
+            Err(e) => {
+                println!("Error: {}", e);
+            }
+        }
+    }
+
+    Ok(database)
+}
+
+async fn find_top_level_folder(userfiles: &Collection<Document>) -> Result<Option<Document>, mongodb::error::Error> {
+    let filter = doc! { "file_type": "top_level_folder" };
+    let result = userfiles.find_one(filter, None).await?;
+    Ok(result)
+}
+
+async fn create_top_level_folder(userfiles: &Collection<Document>, users_path: PathBuf) -> Result<(), mongodb::error::Error> {
+    let top_level_folder = FileInfoRec {
+        file_name: "files".into(),
+        file_path: "files/".into(),
+        is_dir: true,
+        file_type: "top_level_folder".into(),
+        size_in_b: 0,
+        visibility: Visibility::Public,
+        created_at: Utc::now(),
+        uploaded_at: Utc::now(),
+        description: "TopLevelFolder".into(),
+        children: read_dir_recursive(users_path.join("files/"), String::from("files/")).map_or(None, |children| Some(children)),
+    };
+    let top_level_folder_serialized = to_bson(&top_level_folder).expect("Failed to serialize");
+    if let Bson::Document(document) = top_level_folder_serialized {
+        userfiles.insert_one(document, None).await.unwrap();
+    }
+    Ok(())
 }

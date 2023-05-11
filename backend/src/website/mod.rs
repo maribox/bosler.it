@@ -24,4 +24,10 @@ pub fn api_scope() -> actix_web::Scope {
     web::scope("/api")
         .service(handlers::get_file_data)
         .service(handlers::get_all_file_data)
+        .service(alarm_scope())
+}
+
+pub fn alarm_scope() -> actix_web::Scope {
+    web::scope("/alarm")
+        .service(handlers::sse)
 }
