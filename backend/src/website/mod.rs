@@ -1,10 +1,12 @@
-mod handlers;
+pub(crate) mod handlers;
 pub(crate) mod data_repository;
 pub(crate) mod utils;
 
 use actix_web::{web};
-use actix_web_lab::web::spa;
 use std::env;
+use actix_web_lab::web::spa;
+
+use crate::website::handlers::{broadcast_msg, event_stream, index};
 use crate::website::utils::init_path;
 
 
@@ -29,5 +31,7 @@ pub fn api_scope() -> actix_web::Scope {
 
 pub fn alarm_scope() -> actix_web::Scope {
     web::scope("/alarm")
-        .service(handlers::sse)
+        .service(index)
+        .service(event_stream)
+        .service(broadcast_msg)
 }

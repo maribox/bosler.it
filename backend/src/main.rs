@@ -3,6 +3,7 @@ mod types;
 
 use std::env;
 use std::path::PathBuf;
+use std::sync::Arc;
 use actix_web::{App, HttpServer, web};
 use actix_web::middleware::{Logger, NormalizePath};
 use mongodb::{Database};
@@ -10,12 +11,15 @@ use website::website_spa;
 use website::api_scope;
 use crate::website::utils::init_path;
 use crate::website::data_repository::{init_db};
+use crate::website::handlers::broadcast::Broadcaster;
 
 const HTTP_PORT: i32 = 8080;
 const USERS_PATH_DEFAULT: &str = "/home/marius/server/bosler.it/users";
+
 pub struct ServerState {
     users_path: PathBuf,
-    database: mongodb::Database
+    database: Database,
+    broadcaster: Arc<Broadcaster>,
 }
 
 #[actix_web::main]
@@ -28,7 +32,8 @@ async fn main() -> std::io::Result<()> {
     });
     let server_data = web::Data::new(ServerState {
         users_path: user_path,
-        database
+        database,
+        broadcaster: Arc::clone(&Broadcaster::create()),
     });
 
     let ip = website::utils::get_ip();
