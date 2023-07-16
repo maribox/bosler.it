@@ -1,5 +1,5 @@
 This is going to be my website.
 
-It currently consists only of a little typing game I made in the summer '21 but I hope a lot more will come.
+It was recently made new from scratch, so there's currently not a lot going on anymore.
 
 https://bosler.it
