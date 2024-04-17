@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 use thiserror::Error;
 
-
+//TODO: https://betterprogramming.pub/a-simple-guide-to-using-thiserror-crate-in-rust-eee6e442409b
 
 #[derive(Error, Debug)]
 pub enum AppError {
