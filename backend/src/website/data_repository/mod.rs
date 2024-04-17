@@ -6,7 +6,7 @@ use futures::StreamExt;
 use mongodb::bson::{Bson, doc, Document, to_bson};
 use mongodb::{Client, Collection, Database};
 use mongodb::options::ClientOptions;
-use crate::types::{FileInfoRec, Visibility};
+use crate::types::{AppError, FileInfoRec, StartupError, Visibility};
 
 
 
@@ -48,7 +48,7 @@ pub fn read_dir_recursive(user_path: PathBuf, relative_path: String) -> actix_we
 }
 
 
-pub async fn init_db(users_path: PathBuf) -> Result<Database, mongodb::error::Error> {
+pub async fn init_db(users_path: PathBuf) -> Result<Database, AppError> {
     let mut client_options = ClientOptions::parse("mongodb://localhost:27017").await?;
     client_options.app_name = Some("bosler.it".to_string());
     let client = Client::with_options(client_options)?;

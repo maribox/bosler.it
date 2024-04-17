@@ -6,7 +6,6 @@ use actix_web::{web};
 use std::env;
 use actix_web_lab::web::spa;
 
-use crate::website::handlers::{broadcast_msg, event_stream, index};
 use crate::website::utils::init_path;
 
 
@@ -26,12 +25,5 @@ pub fn api_scope() -> actix_web::Scope {
     web::scope("/api")
         .service(handlers::get_file_data)
         .service(handlers::get_all_file_data)
-        .service(alarm_scope())
 }
 
-pub fn alarm_scope() -> actix_web::Scope {
-    web::scope("/alarm")
-        .service(index)
-        .service(event_stream)
-        .service(broadcast_msg)
-}
