@@ -1,57 +1,79 @@
-mod website;
-mod types;
+use std::clone;
+use std::net::{IpAddr, Ipv4Addr};
+use std::sync::Mutex;
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder, HttpRequest, guard};
+use actix_web::web::{Data, route, service};
 
-use std::env;
-use std::error::Error;
-use std::path::PathBuf;
-use std::sync::Arc;
-use actix_web::{App, HttpServer, web};
-use actix_web::middleware::{Logger, NormalizePath};
-use local_ip_address::local_ip;
-use mongodb::{Database};
-use website::website_spa;
-use website::api_scope;
-use crate::types::AppError;
-use crate::website::utils::init_path;
-use crate::website::data_repository::{init_db};
+struct AppState {
+    app_name: String,
+    loading_count: Mutex<i32>,
+}
 
-const HTTP_PORT: i32 = 8080;
-const USERS_PATH_DEFAULT: &str = "/home/marius/server/bosler.it/users";
 
-pub struct ServerState {
-    users_path: PathBuf,
-    database: Database,
+#[get("/")]
+async fn index(data: web::Data<AppState>) -> String {
+    let app_name = &data.app_name;
+    let mut value = data.loading_count.lock().unwrap();
+    *value += 5;
+    println!("{:?}", "|".repeat(*value as usize));
+    format!("Hello {app_name}! Run {value}")
+}
+
+#[get("/go")]
+async fn echo(req: HttpRequest) -> impl Responder {
+    let url = req.url_for("foo", &["1", "2", "3"]); // <- generate URL for "foo" resource
+    if let Ok(url) = url {
+        format!("url: {:?}", url)
+    } else {
+        format!("Couldn't generate URL: {:?}", url)
+    }
+}
+
+async fn manual_hello() -> impl Responder {
+    HttpResponse::Ok().body("Hey there!")
 }
 
 #[actix_web::main]
-async fn main() -> Result<(), AppError> {
-    println!("Starting server...");
-    let user_path = init_path(env::args().nth(2), USERS_PATH_DEFAULT);
-
-    let database : Database= init_db(user_path.clone()).await?;
-    let server_data = web::Data::new(ServerState {
-        users_path: user_path,
-        database,
+async fn main() -> std::io::Result<()> {
+    let state = web::Data::new(AppState {
+        app_name: String::from("Actx"),
+        loading_count: Mutex::new(0),
     });
-
-    let network_ip = local_ip();
-    let ip = "0.0.0.0"; // for development
-    let port = HTTP_PORT;
-    println!("Running on http://{ip}:{port} or http://localhost:{port} locally, which is http://{network_ip:?}:{port} on the network", ip=ip, network_ip=network_ip, port=port);
-    // print database
-    println!("Database: {}", server_data.database.name());
-    let httpserver = HttpServer::new(move || {
-        App::new()
-            .wrap(NormalizePath::default())
-            .wrap(Logger::default())
-            .app_data(server_data.clone())
-            .service(api_scope())
-            .service(website_spa())
-    });
-
-    //httpserver.bind(format!("{ip}:{port}", ip=ip, port=port))?.run().await
-    httpserver.bind(format!("0.0.0.0:{port}", port=port))?.run().await
-
+    let server_ip_address = IpAddr::V4([127, 0, 0, 1].into());
+    let server_port: u16 = 8080;
+    if let Ok(started_server) = start_server(state, server_ip_address, server_port).await {
+        // TODO This would be reached if the server is stopped, not started
+        println!("Started Server successfully at {}:{}", server_ip_address.to_string(), server_port);
+        Ok(started_server)
+    } else {
+        println!("Failed to start server.");
+        Err(std::io::Error::new(std::io::ErrorKind::Other, "Failed to start server"))
+    }
 }
 
+async fn start_server(state: Data<AppState>, ip_addr: IpAddr, server_port: u16) -> std::io::Result<()> {
+    Ok(HttpServer::new(move || {
+        App::new()
+            .app_data(state.clone())
+            .configure(config_public)
+            .configure(config_home)
+    })
+        .bind((ip_addr, server_port))?
+        .run()
+        .await?)
+}
+
+fn config_public(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::resource("/")
+        .route(web::get().to(|| async {HttpResponse::Ok().body("Hey, hello! This is the public section of this server.")}))
+    );
+}
+
+fn config_home(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("home")
+            .guard(guard::Host("localhost"))
+            .route("alarm", web::to(||async { HttpResponse::Ok().body("reached alarm section") }))
+    );
+}
 
